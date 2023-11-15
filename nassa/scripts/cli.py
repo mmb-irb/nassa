@@ -30,7 +30,7 @@ def parse_pathfiles(names, prefix):
 @click.command()
 @click.pass_obj
 def coordist(kwargs):
-    """Execute Coordinate Distributions analysis."""
+    """Execute AAAA Coordinate Distributions analysis."""
     click.echo("Executing coordinate distributions analysis")
     cdist = CoordinateDistributions(**kwargs)
     cdist.run()

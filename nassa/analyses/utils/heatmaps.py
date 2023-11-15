@@ -31,17 +31,29 @@ def get_axes(subunit_len, base):
         "AA"]
     if subunit_len == 4:
         xaxis = yaxis[::-1]
+        tetramer_order = [b.join(f) for f in yaxis for b in xaxis]
     elif subunit_len == 3:
         xaxis = f"G A C {base}".split()
+        tetramer_order = [b.join(f) for f in yaxis for b in xaxis]
+    elif subunit_len == 6:
+        tetramer_order= [f"{n1}{n2}{n3}" for n1 in yaxis for n2 in yaxis for n3 in yaxis]
+        yaxis = []
+        xaxis = []
+        for i in tetramer_order:
+            yaxis.append(i[:2] + "_" + i[-2:])
+            xaxis.append(i[2:4])
+        yaxis = list(set(yaxis))
+        xaxis = list(set(xaxis))        
+
+    return xaxis, yaxis, tetramer_order
 
     # Tetra order starts with last flank and first basepair,
     # iterates over basepairs first, and then over flanks.
     # This is because the plot is populated from bottom left to top right
-    tetramer_order = [b.join(f) for f in yaxis for b in xaxis]
-    return xaxis, yaxis, tetramer_order
+    #tetramer_order = [b.join(f) for f in yaxis for b in xaxis]
+    #return xaxis, yaxis, tetramer_order
 
-
-def reorder_labels(df, subunit_name, tetramer_order):
+def reorder_labels1(df, subunit_name, tetramer_order):
     # sort values according to tetramer order in axes
     sorted_index = dict(zip(tetramer_order, range(len(tetramer_order))))
     df["subunit_rank"] = df[subunit_name].map(sorted_index)
@@ -50,6 +62,38 @@ def reorder_labels(df, subunit_name, tetramer_order):
     df = df.reset_index(drop=True)
     return df
 
+def reorder_labels(df, subunit_name, tetramer_order):
+    tetramer_order.sort()
+
+    all_tetramers = pd.DataFrame({subunit_name: ["".join(tetramer) for tetramer in tetramer_order]})
+    merged_df = pd.merge(all_tetramers, df, on=subunit_name, how='left')
+    merged_df['subunit_rank'] = merged_df[subunit_name].map(lambda x: tetramer_order.index(x) if not pd.isna(x) else np.nan)
+    merged_df = merged_df.sort_values(by='subunit_rank').reset_index(drop=True) 
+
+    centre= len(merged_df[subunit_name][1])//2
+    merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre-1] + "_" + x[centre+1:])
+    merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[centre-1:centre+1])
+    merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
+    centre = len(merged_df[subunit_name][1])//2
+
+    yaxiss = []
+    xaxiss = []
+    for i in range(len(merged_df)):
+        xaxiss.append(merged_df[subunit_name][i][centre-1:centre+1])
+        yaxiss.append(merged_df[subunit_name][i][:centre-1] + "_" + merged_df[subunit_name][i][centre+1:])
+
+    xaxis=[]
+    for elemento in xaxiss:
+        if elemento not in xaxis:
+            xaxis.append(elemento)
+
+    yaxis = []
+    for elemento in yaxiss:
+        if elemento not in yaxis:
+            yaxis.append(elemento)
+    df = merged_df
+    print("REORDENANDO")
+    return df, xaxis, yaxis
 
 def arlequin_plot(
         df,
@@ -57,30 +101,27 @@ def arlequin_plot(
         global_std,
         helpar,
         save_path,
-        unit_name="tetramer",
-        unit_len=4,
-        base="T",
+        unit_name,#="hexamer",
+        unit_len,#=6,
+        base,#="U",
         label_offset=0.5):
-
+    
     xaxis, yaxis, tetramer_order = get_axes(unit_len, base)
-    df = reorder_labels(df, unit_name, tetramer_order)
-
-    # axis labels
-    sep = "." * (unit_len - 2)
-    yaxis_labels = [sep.join(f) for f in yaxis]
-
+    df, xaxis, yaxis = reorder_labels(df, unit_name, tetramer_order)
     # data to plot
     sz1 = df["col1"].ravel()
     sz2 = df["col2"].ravel()
-
+    
     # build triangle arrays for plot
     # N: flanks combinations
     # M: subunit middle-part combinations
-    N = 4 ** 2
-    M = 4 ** (unit_len - 2)
+    M = 4 ** 2
+    N = 4 ** (unit_len - 2)
+
     x = np.arange(M + 1)
     y = np.arange(N + 1)
     xs, ys = np.meshgrid(x, y)
+
     upper_triangle = [(i + j*(M+1), i+1 + j*(M+1), i+1 + (j+1)*(M+1))
                       for j in range(N) for i in range(M)]
     lower_triangle = [(i + j*(M+1), i+1 + (j+1)*(M+1), i + (j+1)*(M+1))
@@ -90,8 +131,9 @@ def arlequin_plot(
 
     # build plots
     fig, axs = plt.subplots(
+        1,      
         1,
-        1,
+        figsize=(8, 18),
         dpi=300,
         tight_layout=True)
 
@@ -110,12 +152,12 @@ def arlequin_plot(
     _ = axs.set_xticks(xlocs+label_offset, minor=True)
     _ = axs.set_xticklabels(xaxis, minor=True)
     _ = axs.set_yticks(ylocs+label_offset, minor=True)
-    _ = axs.set_yticklabels(yaxis_labels, minor=True)
+    _ = axs.set_yticklabels(yaxis, minor=True,fontsize=6)
 
     _ = axs.set_xlim(0, M)
     _ = axs.set_ylim(0, N)
     axs.set_title(helpar.upper())
-    cbar = fig.colorbar(img1, ax=axs, ticks=[-1, 0, 1])
+    cbar = fig.colorbar(img1, ax=axs, ticks=[-1, 0, 1], shrink=0.4)
     cbar.ax.set_yticklabels([
         f"< {global_mean:.2f}-{global_std:.2f}",
         f"{global_mean:.2f}$\pm${global_std:.2f}",

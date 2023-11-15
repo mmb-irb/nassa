@@ -39,9 +39,8 @@ class NucleicAcid:
         self.sequence = sequence.upper()
         self.unit_len = unit_len
         self.unit_name = unit_name
-
-        self.Ac = self._adenine_complement(Ac)
         self._ic_sequence = ic_sequence
+        self.Ac = self._adenine_complement(Ac)
 
         self.all_subunits = self.get_all_subunits()
         self.all_ic_subunits = self.get_all_ic_subunits()
@@ -92,9 +91,9 @@ class NucleicAcid:
         Ac = Ac.upper()
         if Ac != "T" and Ac != "U":
             # try to look for Adenine complement in sequence
-            if "T" in self.sequence:
+            if "T" in self.sequence or "T" in self._ic_sequence:
                 Ac = "T"
-            elif "U" in self.sequence:
+            elif "U" in self.sequence or "U" in self._ic_sequence:
                 Ac = "U"
             else:
                 Ac = "X"
