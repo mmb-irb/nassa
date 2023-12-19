@@ -1,0 +1,2 @@
+[console_scripts]
+nassa = nassa.scripts.cli:entry_point

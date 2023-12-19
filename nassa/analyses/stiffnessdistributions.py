@@ -5,8 +5,8 @@ from .base import Base
 from .utils.heatmaps import arlequin_plot
 from ..loaders.sequence import load_sequence
 from ..loaders.trajectory import load_serfile
-
-
+import numpy.ma as ma
+from collections import Counter
 class StiffnessDistributions(Base):
 
     def __init__(
@@ -86,10 +86,10 @@ class StiffnessDistributions(Base):
             diagonals[ic_tetramer] = np.append(
                 stiffness_diag,
                 [np.product(stiffness_diag), np.sum(stiffness_diag)])
-            results["covariances"][tetramer] = cov_df
-            # results["covariances"][ic_tetramer] = cov_df
-            results["constants"][tetramer] = cte
-            # results["constants"][ic_tetramer] = cte
+            #results["covariances"][tetramer] = cov_df
+            results["covariances"][ic_tetramer] = cov_df
+            #results["constants"][tetramer] = cte
+            results["constants"][ic_tetramer] = cte
         # build stiffness table
         columns = [sequence.unit_name] + coordinates + ["product", "sum"]
         results["stiffness"] = pd.DataFrame.from_dict(
@@ -118,11 +118,31 @@ class StiffnessDistributions(Base):
             TL_av = self.circ_avg(cols_dict["buckle"])
             RL_av = self.circ_avg(cols_dict["propel"])
             TW_av = self.circ_avg(cols_dict["opening"])
-
+        print(SH_av, SL_av, RS_av, TL_av, RL_av, TW_av)
+        print(cols_dict)
         cols_arr = [cols_dict[coord] for coord in coordinates]
-        cov = np.cov(cols_arr)
-        cov_df = pd.DataFrame(cov, columns=coordinates, index=coordinates)
+        duplicated_keys = [key for key, count in Counter(cols_dict).items() if count > 1]
 
+        if duplicated_keys:
+            raise ValueError(f"Llaves duplicadas encontradas: {duplicated_keys}")
+        df = pd.DataFrame(cols_dict)
+        print(df)
+
+
+
+
+
+        #print(cols_arr)
+        #cov = ma.cov(ma.masked_invalid(cols_arr),rowvar=False)
+        cols_arr = np.array(cols_arr, dtype=int)
+        #cov = np.cov(cols_arr)
+        #cov = pd.DataFrame(cols_arr).T.reset_index(drop=True)
+        print(cols_arr)
+        print(cov)
+        cov = cols_arr.cov()
+        cov_df = pd.DataFrame(cov, columns=coordinates, index=coordinates)
+        #print(cols_arr)
+        print(cov)
         stiff = np.linalg.inv(cov) * KT
         last_row = [SH_av, SL_av, RS_av, TL_av, RL_av, TW_av]
         stiff = np.append(stiff, last_row).reshape(7, 6)
@@ -156,8 +176,11 @@ class StiffnessDistributions(Base):
         # 0: between mean-std and mean+std (white)
         # -1: below mean-std (red)
         labeled_df = (df < l2) * -1 + (df > l1)
-        labeled_df = labeled_df.append(global_mean.rename("g_mean"))
-        labeled_df = labeled_df.append(global_std.rename("g_std"))
+        #labeled_df = labeled_df.append(global_mean.rename("g_mean"))
+        #labeled_df = labeled_df.append(global_std.rename("g_std"))
+        labeled_df.loc["g_mean"] = global_mean
+        labeled_df.loc["g_std"] = global_std
+        #print(labeled_df)
 
         return labeled_df
 
@@ -179,6 +202,7 @@ class StiffnessDistributions(Base):
     def make_plots(self, dataset):
         stiffness_data = dataset["stiffness"]
         labeled_df = self.unimod_labels(stiffness_data)
+        print(stiffness_data)
         for col in labeled_df.columns:
             df = labeled_df[col]
             g_mean = df.loc["g_mean"]

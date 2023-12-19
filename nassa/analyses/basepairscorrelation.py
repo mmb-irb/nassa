@@ -2,12 +2,14 @@ from itertools import product
 
 import pandas as pd
 import numpy as np
-
+from ..entities.nucleicacid import NucleicAcid
 from .base import Base
 from ..loaders.sequence import load_sequence
 from ..loaders.trajectory import load_serfile
 from .utils.heatmaps import basepair_plot
-
+import os
+import glob
+import shutil
 
 class BasePairCorrelation(Base):
     """
@@ -42,6 +44,74 @@ class BasePairCorrelation(Base):
             extracted[coord.lower()] = crd_data
             self.logger.info(
                 f"loaded {len(crd_data)} files for coordinate <{coord}>")
+
+        for parameter in self.coordinate_info.keys():
+            datos_por_tetramero = {}
+            path = os.path.join(self.save_path, parameter)
+            temporal_path = os.path.join(path,'temporal')
+
+            if not os.path.exists(path):
+                os.makedirs(path)
+            if not os.path.exists(temporal_path):
+                os.makedirs(temporal_path)
+
+            for sequence in range(0,len(sequences)):
+                header = sequences[sequence].all_subunits
+                b = pd.DataFrame(extracted[parameter][sequence])
+                b1 = b.iloc[:, 2:17]
+                b1.columns = header
+                for a in header:
+                    hexamer = b1[a]
+                    hexamer.to_csv(f"{temporal_path}/{a}.csv")
+
+            archivos_csv = glob.glob(f'{temporal_path}/*.csv')
+            df_combinado = pd.DataFrame()
+
+            for archivo_csv in archivos_csv:
+                nombre_archivo = archivo_csv.replace(temporal_path + '/', '').replace('.csv', '')
+                #df = pd.read_csv(archivo_csv, header=None, names=[nombre_archivo])
+                tetramero = nombre_archivo[1:5]
+                df_temporal = pd.read_csv(archivo_csv, header=None, names=[nombre_archivo])
+                #df_combinado = pd.concat([df_combinado, df_temporal], axis=1)
+                df_combinado = pd.concat([df_combinado.reset_index(drop=True), df_temporal.reset_index(drop=True)], axis=1)
+
+                #if tetramero not in datos_por_tetramero:
+               #     datos_por_tetramero[tetramero] = df_temporal
+               # else:
+                    #datos_por_tetramero[tetramero] = pd.concat([datos_por_tetramero[tetramero], df_temporal], axis=1)
+               #     df_temporal = df_temporal.reset_index(drop=True)
+               #     datos_por_tetramero[tetramero] = pd.concat([datos_por_tetramero[tetramero], df_temporal], axis=1)
+
+            #print(list(df_combinado.columns))
+            df_combinado.to_csv(f"{path}.csv")
+            print(df_combinado)
+            hexameros = df_combinado.columns.tolist()
+            tetrameros = list()
+            for i in hexameros:
+                tetrameros.append(i[1:5])
+            #print(tetrameros)
+            tetrameros_uniq = list(set(tetrameros))
+            #print(tetrameros_uniq)
+            columnas_coincidentes = []
+
+            for tetramer in tetrameros_uniq:
+                for columna in df_combinado.columns:
+                    # Verificar si los cuatro valores centrales coinciden con la palabra
+                    valores_centrales = df_combinado[columna][1:5]
+                    #print(valores_centrales)
+                    coincidencia = all(valor == tetramer for valor in valores_centrales)
+
+                    if coincidencia:
+                        columnas_coincidentes.append(columna)
+
+            #print(columnas_coincidentes)
+
+            shutil.rmtree(temporal_path)
+
+            for tetramero, df_tetramero in datos_por_tetramero.items():
+                nombre_archivo_salida = f'{path}/{tetramero}_{parameter}.csv'
+                df_tetramero.to_csv(nombre_archivo_salida, index=False)     
+
         return extracted
 
     def transform(self, data):

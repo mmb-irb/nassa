@@ -13,10 +13,18 @@ def load_serfile(ser_file, tail=True, n_lines=None):
     :returns pandas.DataFrame: .ser file converted into a pandas.DataFrame table
     """
     if tail:
-        with open(ser_file, "r") as f:
+        #with open(ser_file, "r") as f:
             # read last line of file, get index number for that line
-            total_lines = int(deque(f, 1)[0].split()[0])
-        extra_kwargs = dict(skiprows=total_lines - n_lines)
+        #    total_lines = int(deque(f, 1)[0].split()[0])
+        #extra_kwargs = dict(skiprows=total_lines - n_lines)
+        with open(ser_file, "r") as f:
+            total_lines_str = deque(f, 1)[0].split()[0]
+            total_lines = int(total_lines_str) if total_lines_str.isdigit() else None
+
+        if total_lines is not None and n_lines is not None:
+            extra_kwargs = dict(skiprows=max(0, total_lines - n_lines))
+        else:
+            extra_kwargs = dict()
     else:
         extra_kwargs = dict(nrows=n_lines)
     ser_data = pd.read_csv(

@@ -76,9 +76,7 @@ class BiBiTransformer(TransformerMixin):
             weights.append(w)
 
         # bayes factor criteria for normality
-        uninormal, binormal, insuf_ev = True, False, False  # self.bayes_factor_criteria(
-        # bics[0],
-        # bics[1])
+        uninormal, binormal, insuf_ev, p = self.bayes_factor_criteria(bics[0],bics[1])
         if binormal:
             maxm = np.argmax(means[1])
             minm = np.argmin(means[1])
@@ -103,6 +101,7 @@ class BiBiTransformer(TransformerMixin):
             insuf_ev=insuf_ev,
             unimodal=unimodal,
             bics=bics,
+            p=p,
             mean1=mean1,
             mean2=mean2,
             var1=var1,
@@ -132,7 +131,7 @@ class BiBiTransformer(TransformerMixin):
         uninormal = p < (self.confidence_level / 100)
         binormal = p > (1 - (self.confidence_level / 100))
         insuf_ev = True if (not uninormal and not binormal) else False
-        return uninormal, binormal, insuf_ev
+        return uninormal, binormal, insuf_ev, p
 
     def is_unimodal(self, means, vars):
         """implements P.Dans version of Helguero's theorem in order to detect unimodality.

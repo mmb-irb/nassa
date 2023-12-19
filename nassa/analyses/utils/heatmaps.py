@@ -54,17 +54,37 @@ def get_axes(subunit_len, base):
     #return xaxis, yaxis, tetramer_order
 
 def reorder_labels1(df, subunit_name, tetramer_order):
-    # sort values according to tetramer order in axes
-    sorted_index = dict(zip(tetramer_order, range(len(tetramer_order))))
-    df["subunit_rank"] = df[subunit_name].map(sorted_index)
-    df = df.sort_values(by="subunit_rank")
-    df = df.drop("subunit_rank", axis=1)
-    df = df.reset_index(drop=True)
-    return df
+    tetramer_order.sort()
+    all_tetramers = pd.DataFrame({subunit_name: ["".join(tetramer) for tetramer in tetramer_order]})
+    merged_df = pd.merge(all_tetramers, df, on=subunit_name, how='left')
+    merged_df['subunit_rank'] = merged_df[subunit_name].map(lambda x: tetramer_order.index(x) if not pd.isna(x) else np.nan)
+    merged_df = merged_df.sort_values(by='subunit_rank').reset_index(drop=True) 
+    
+    centre= len(merged_df[subunit_name][1])//2
+    merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre-2]+"...."+x[centre+2:])
+    merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[centre-2:centre+2])
+    merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
+    yaxiss = []
+    xaxiss = []
+    for i in range(len(merged_df)):
+        xaxiss.append(merged_df[subunit_name][i][centre-2:centre+2])
+        yaxiss.append(merged_df[subunit_name][i][:centre-2] + "...." + merged_df[subunit_name][i][centre+2:])
+
+    xaxis1=[]
+    for elemento in xaxiss:
+        if elemento not in xaxis1:
+            xaxis1.append(elemento)
+
+    yaxis1 = []
+    for elemento in yaxiss:
+        if elemento not in yaxis1:
+            yaxis1.append(elemento)
+    df1 = merged_df
+
+    return df1, xaxis1, yaxis1
 
 def reorder_labels(df, subunit_name, tetramer_order):
     tetramer_order.sort()
-
     all_tetramers = pd.DataFrame({subunit_name: ["".join(tetramer) for tetramer in tetramer_order]})
     merged_df = pd.merge(all_tetramers, df, on=subunit_name, how='left')
     merged_df['subunit_rank'] = merged_df[subunit_name].map(lambda x: tetramer_order.index(x) if not pd.isna(x) else np.nan)
@@ -74,7 +94,6 @@ def reorder_labels(df, subunit_name, tetramer_order):
     merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre-1] + "_" + x[centre+1:])
     merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[centre-1:centre+1])
     merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
-    centre = len(merged_df[subunit_name][1])//2
 
     yaxiss = []
     xaxiss = []
@@ -92,7 +111,7 @@ def reorder_labels(df, subunit_name, tetramer_order):
         if elemento not in yaxis:
             yaxis.append(elemento)
     df = merged_df
-    print("REORDENANDO")
+
     return df, xaxis, yaxis
 
 def arlequin_plot(
@@ -108,13 +127,11 @@ def arlequin_plot(
     
     xaxis, yaxis, tetramer_order = get_axes(unit_len, base)
     df, xaxis, yaxis = reorder_labels(df, unit_name, tetramer_order)
-    # data to plot
+    df1, xaxis1, yaxis1 = reorder_labels1(df, unit_name, tetramer_order)
+
     sz1 = df["col1"].ravel()
     sz2 = df["col2"].ravel()
-    
-    # build triangle arrays for plot
-    # N: flanks combinations
-    # M: subunit middle-part combinations
+ 
     M = 4 ** 2
     N = 4 ** (unit_len - 2)
 
@@ -129,11 +146,10 @@ def arlequin_plot(
     triang1 = Triangulation(xs.ravel(), ys.ravel(), upper_triangle)
     triang2 = Triangulation(xs.ravel(), ys.ravel(), lower_triangle)
 
-    # build plots
     fig, axs = plt.subplots(
         1,      
         1,
-        figsize=(8, 18),
+        figsize=(8,18),
         dpi=300,
         tight_layout=True)
 
@@ -150,7 +166,7 @@ def arlequin_plot(
     _ = axs.set_yticks(ylocs)
     _ = axs.set_yticklabels("")
     _ = axs.set_xticks(xlocs+label_offset, minor=True)
-    _ = axs.set_xticklabels(xaxis, minor=True)
+    _ = axs.set_xticklabels(xaxis, minor=True,fontsize=8)
     _ = axs.set_yticks(ylocs+label_offset, minor=True)
     _ = axs.set_yticklabels(yaxis, minor=True,fontsize=6)
 
@@ -165,7 +181,60 @@ def arlequin_plot(
 
     file_path = pathlib.Path(save_path) / f"{helpar}.pdf"
     fig.savefig(fname=file_path, format="pdf")
-    return fig, axs
+
+    #  SECOND PLOT
+    sz1_1 = df1["col1"].ravel()
+    sz2_1 = df1["col2"].ravel()
+
+    M_1 = 4 ** (unit_len - 2)
+    N_1 = 4 ** 2
+
+    x_1 = np.arange(M_1 + 1)
+    y_1 = np.arange(N_1 + 1)
+    xs_1, ys_1 = np.meshgrid(x_1, y_1)
+
+    upper_triangle_1 = [(i + j*(M_1+1), i+1 + j*(M_1+1), i+1 + (j+1)*(M_1+1))
+                      for j in range(N_1) for i in range(M_1)]
+    lower_triangle_1 = [(i + j*(M_1+1), i+1 + (j+1)*(M_1+1), i + (j+1)*(M_1+1))
+                      for j in range(N_1) for i in range(M_1)]
+    triang1_1 = Triangulation(xs_1.ravel(), ys_1.ravel(), upper_triangle_1)
+    triang2_1 = Triangulation(xs_1.ravel(), ys_1.ravel(), lower_triangle_1)
+
+    fig_1, axs_1 = plt.subplots(
+        1,      
+        1,
+        figsize=(22, 6), 
+        dpi=300,
+        tight_layout=True)
+
+    colormap_1 = plt.get_cmap("bwr", 3).reversed()
+    colormap_1.set_bad(color="grey")
+    img1_1 = axs_1.tripcolor(triang1_1, sz1_1, cmap=colormap_1, vmin=-1, vmax=1)
+    _ = axs_1.tripcolor(triang2_1, sz2_1, cmap=colormap_1, vmin=-1, vmax=1)
+
+    axs_1.grid()
+    xlocs_1 = np.arange(len(xaxis1))
+    ylocs_1 = np.arange(len(yaxis1))
+    _ = axs_1.set_xticks(xlocs_1)
+    _ = axs_1.set_xticklabels("")
+    _ = axs_1.set_yticks(ylocs_1)
+    _ = axs_1.set_yticklabels("")
+    _ = axs_1.set_xticks(xlocs_1+label_offset, minor=True)
+    _ = axs_1.set_xticklabels(xaxis1, minor=True,fontsize=4, rotation=90)
+    _ = axs_1.set_yticks(ylocs_1+label_offset, minor=True)
+    _ = axs_1.set_yticklabels(yaxis1, minor=True,fontsize=6)
+    _ = axs_1.set_xlim(0, M_1)
+    _ = axs_1.set_ylim(0, N_1)
+    axs_1.set_title(helpar.upper())
+    cbar_1 = fig_1.colorbar(img1_1, ax=axs_1, ticks=[-1, 0, 1], shrink=0.4)
+    cbar_1.ax.set_yticklabels([
+        f"< {global_mean:.2f}-{global_std:.2f}",
+        f"{global_mean:.2f}$\pm${global_std:.2f}",
+        f"> {global_mean:.2f}+{global_std:.2f}"])
+
+    file_path1 = pathlib.Path(save_path) / f"{helpar}_rotated.pdf"
+    fig_1.savefig(fname=file_path1, format="pdf")
+    return fig, axs, fig_1, axs_1 
 
 
 def bconf_heatmap(df, fname, save_path, base="T", label_offset=0.05):
@@ -315,9 +384,9 @@ def basepair_plot(
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     cmap.set_bad(color="gainsboro")
 
-    category = data.index.to_series().apply(lambda s: s[1:3])
+    category = data.index.to_series().apply(lambda s: s[0:4])
     data["category"] = category
-
+    
     for cat in category.unique():
         cat_df = data[data["category"] == cat]
         cat_df = cat_df.drop("category", axis=1)
@@ -326,7 +395,7 @@ def basepair_plot(
             1,
             1,
             dpi=300,
-            figsize=(7.5, 5),
+            figsize=(8, 7),
             tight_layout=True)
         im = ax.imshow(cat_df, cmap=cmap, norm=norm, aspect='auto')
         plt.colorbar(im)
@@ -338,8 +407,8 @@ def basepair_plot(
 
         ylocs = np.arange(len(cat_df.index))
         _ = ax.set_yticks(ylocs)
-        _ = ax.set_yticklabels(cat_df.index.to_list())
-
+        _ = ax.set_yticklabels(cat_df.index.to_list(),fontsize=4)
+        
         ax.set_title(
             f"Correlation for basepair group {cat}")
         plt.tight_layout()
