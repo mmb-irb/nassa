@@ -10,8 +10,8 @@ from matplotlib.colors import ListedColormap
 
 
 def get_axes(subunit_len, base):
-    # define list for axes ticks to inforce label order,
-    # so its the same as the paper
+    '''Create the correct labels according to the lenght of the subunit'''
+
     yaxis = [
         f"{base}{base}",
         f"{base}C",
@@ -29,88 +29,158 @@ def get_axes(subunit_len, base):
         "GA",
         "AG",
         "AA"]
-    if subunit_len == 4:
-        xaxis = yaxis[::-1]
-        tetramer_order = [b.join(f) for f in yaxis for b in xaxis]
-    elif subunit_len == 3:
+
+    if subunit_len == 3:
         xaxis = f"G A C {base}".split()
-        tetramer_order = [b.join(f) for f in yaxis for b in xaxis]
+        nucleotide_order = [b.join(f) for f in yaxis for b in xaxis]
+
+    elif subunit_len == 4:
+        xaxis = yaxis[::-1]
+        nucleotide_order = [b.join(f) for f in yaxis for b in xaxis]
+
+    elif subunit_len == 5:
+        xaxis = f"G A C {base}".split()
+        yaxis = []
+        nucl = ['A', 'C', 'G', base]
+        nucleotide_order = [a + b + c + d + e for a in nucl for b in nucl for c in nucl for d in nucl for e in nucl]
+        for i in nucleotide_order:
+            yaxis.append(i[:2] + "_" + i[-2:])
+        yaxis = list(set(yaxis))
+
     elif subunit_len == 6:
-        tetramer_order= [f"{n1}{n2}{n3}" for n1 in yaxis for n2 in yaxis for n3 in yaxis]
+        nucleotide_order= [f"{n1}{n2}{n3}" for n1 in yaxis for n2 in yaxis for n3 in yaxis]
         yaxis = []
         xaxis = []
-        for i in tetramer_order:
+        for i in nucleotide_order:
             yaxis.append(i[:2] + "_" + i[-2:])
             xaxis.append(i[2:4])
         yaxis = list(set(yaxis))
-        xaxis = list(set(xaxis))        
+        xaxis = list(set(xaxis))
 
-    return xaxis, yaxis, tetramer_order
+    return xaxis, yaxis, nucleotide_order
 
-    # Tetra order starts with last flank and first basepair,
-    # iterates over basepairs first, and then over flanks.
-    # This is because the plot is populated from bottom left to top right
-    #tetramer_order = [b.join(f) for f in yaxis for b in xaxis]
-    #return xaxis, yaxis, tetramer_order
 
-def reorder_labels1(df, subunit_name, tetramer_order):
+def reorder_labels_rotated_plot(df, subunit_name, tetramer_order):
+    '''For the rotated plot: reorder the nucleotides labels matching them to their according values of the dataframe. '''
+    
+    if subunit_name == 'tetramer':
+        sorted_index = dict(zip(tetramer_order, range(len(tetramer_order))))
+        df["subunit_rank"] = df[subunit_name].map(sorted_index)
+        df = df.sort_values(by="subunit_rank")
+        df = df.drop("subunit_rank", axis=1)
+        df = df.reset_index(drop=True)
+
     tetramer_order.sort()
     all_tetramers = pd.DataFrame({subunit_name: ["".join(tetramer) for tetramer in tetramer_order]})
     merged_df = pd.merge(all_tetramers, df, on=subunit_name, how='left')
     merged_df['subunit_rank'] = merged_df[subunit_name].map(lambda x: tetramer_order.index(x) if not pd.isna(x) else np.nan)
     merged_df = merged_df.sort_values(by='subunit_rank').reset_index(drop=True) 
     
-    centre= len(merged_df[subunit_name][1])//2
-    merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre-2]+"...."+x[centre+2:])
-    merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[centre-2:centre+2])
-    merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
-    yaxiss = []
-    xaxiss = []
-    for i in range(len(merged_df)):
-        xaxiss.append(merged_df[subunit_name][i][centre-2:centre+2])
-        yaxiss.append(merged_df[subunit_name][i][:centre-2] + "...." + merged_df[subunit_name][i][centre+2:])
+    if subunit_name == 'hexamer':
+        centre= len(merged_df[subunit_name][1])//2
+        merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre-2]+"...."+x[centre+2:])
+        merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[centre-2:centre+2])
+        merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
+        yaxiss = []
+        xaxiss = []
+        for i in range(len(merged_df)):
+            xaxiss.append(merged_df[subunit_name][i][centre-2:centre+2])
+            yaxiss.append(merged_df[subunit_name][i][:centre-2] + "...." + merged_df[subunit_name][i][centre+2:])
 
-    xaxis1=[]
-    for elemento in xaxiss:
-        if elemento not in xaxis1:
-            xaxis1.append(elemento)
+        xaxis1=[]
+        for nucl in xaxiss:
+            if nucl not in xaxis1:
+                xaxis1.append(nucl)
 
-    yaxis1 = []
-    for elemento in yaxiss:
-        if elemento not in yaxis1:
-            yaxis1.append(elemento)
-    df1 = merged_df
+        yaxis1 = []
+        for nucl in yaxiss:
+            if nucl not in yaxis1:
+                yaxis1.append(nucl)
+        df1 = merged_df
+
+    if subunit_name == 'pentamer':
+        centre= len(merged_df[subunit_name][1])%2
+        merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre+1]+"_"+x[centre+2:])
+        merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[centre+1])
+        merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
+        yaxiss = []
+        xaxiss = []
+        for i in range(len(merged_df)):
+            yaxiss.append(merged_df[subunit_name][i][centre+1])
+            xaxiss.append(merged_df[subunit_name][i][:centre+1] + "_" + merged_df[subunit_name][i][centre+2:])
+
+        xaxis1=[]
+        for nucl in xaxiss:
+            if nucl not in xaxis1:
+                xaxis1.append(nucl)
+
+        yaxis1 = []
+        for nucl in yaxiss:
+            if nucl not in yaxis1:
+                yaxis1.append(nucl)
+        df1 = merged_df    
 
     return df1, xaxis1, yaxis1
 
-def reorder_labels(df, subunit_name, tetramer_order):
+def reorder_labels_straight_plot(df, subunit_name, tetramer_order):
+    '''For the straight plot: reorder the nucleotides labels matching them to their according values of the dataframe. '''
+
+    if subunit_name == 'tetramer':
+        sorted_index = dict(zip(tetramer_order, range(len(tetramer_order))))
+        df["subunit_rank"] = df[subunit_name].map(sorted_index)
+        df = df.sort_values(by="subunit_rank")
+        df = df.drop("subunit_rank", axis=1)
+        df = df.reset_index(drop=True)
+
     tetramer_order.sort()
     all_tetramers = pd.DataFrame({subunit_name: ["".join(tetramer) for tetramer in tetramer_order]})
     merged_df = pd.merge(all_tetramers, df, on=subunit_name, how='left')
     merged_df['subunit_rank'] = merged_df[subunit_name].map(lambda x: tetramer_order.index(x) if not pd.isna(x) else np.nan)
     merged_df = merged_df.sort_values(by='subunit_rank').reset_index(drop=True) 
+    
+    if subunit_name == 'hexamer':
+        centre= len(merged_df[subunit_name][1])//2
+        merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre-1] + "_" + x[centre+1:])
+        merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[centre-1:centre+1])
+        merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
+        yaxiss = []
+        xaxiss = []
+        for i in range(len(merged_df)):
+            xaxiss.append(merged_df[subunit_name][i][centre-1:centre+1])
+            yaxiss.append(merged_df[subunit_name][i][:centre-1] + "_" + merged_df[subunit_name][i][centre+1:])
 
-    centre= len(merged_df[subunit_name][1])//2
-    merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre-1] + "_" + x[centre+1:])
-    merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[centre-1:centre+1])
-    merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
+        xaxis=[]
+        for nucl in xaxiss:
+            if nucl not in xaxis:
+                xaxis.append(nucl)
 
-    yaxiss = []
-    xaxiss = []
-    for i in range(len(merged_df)):
-        xaxiss.append(merged_df[subunit_name][i][centre-1:centre+1])
-        yaxiss.append(merged_df[subunit_name][i][:centre-1] + "_" + merged_df[subunit_name][i][centre+1:])
+        yaxis = []
+        for nucl in yaxiss:
+            if nucl not in yaxis:
+                yaxis.append(nucl)
+        df = merged_df
 
-    xaxis=[]
-    for elemento in xaxiss:
-        if elemento not in xaxis:
-            xaxis.append(elemento)
+    if subunit_name == 'pentamer':
+        centre= len(merged_df[subunit_name][1])%2
+        merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre+1] + "_" + x[centre+2:])
+        merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[centre+1])
+        merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
+        yaxiss = []
+        xaxiss = []
+        for i in range(len(merged_df)):
+            xaxiss.append(merged_df[subunit_name][i][centre+1])
+            yaxiss.append(merged_df[subunit_name][i][:centre+1] + "_" + merged_df[subunit_name][i][centre+2:])
 
-    yaxis = []
-    for elemento in yaxiss:
-        if elemento not in yaxis:
-            yaxis.append(elemento)
-    df = merged_df
+        xaxis=[]
+        for nucl in xaxiss:
+            if nucl not in xaxis:
+                xaxis.append(nucl)
+
+        yaxis = []
+        for nucl in yaxiss:
+            if nucl not in yaxis:
+                yaxis.append(nucl)
+        df = merged_df
 
     return df, xaxis, yaxis
 
@@ -120,21 +190,32 @@ def arlequin_plot(
         global_std,
         helpar,
         save_path,
-        unit_name,#="hexamer",
-        unit_len,#=6,
-        base,#="U",
+        unit_name,
+        unit_len,
+        base,
         label_offset=0.5):
     
     xaxis, yaxis, tetramer_order = get_axes(unit_len, base)
-    df, xaxis, yaxis = reorder_labels(df, unit_name, tetramer_order)
-    df1, xaxis1, yaxis1 = reorder_labels1(df, unit_name, tetramer_order)
+    df, xaxis, yaxis = reorder_labels_straight_plot(df, unit_name, tetramer_order)
+    df1, xaxis1, yaxis1 = reorder_labels_rotated_plot(df, unit_name, tetramer_order)
 
     sz1 = df["col1"].ravel()
     sz2 = df["col2"].ravel()
  
-    M = 4 ** 2
-    N = 4 ** (unit_len - 2)
+    if unit_name == 'hexamer':
+        M = 4**2
+        N = 4**(unit_len - 2)
+        M_1 = 4 ** (unit_len - 2)
+        N_1 = 4 ** 2
+    
+    if unit_name == 'pentamer':
+        M = 4 
+        N = 4 ** 4
+        M_1 = 4 ** 4
+        N_1 = 4
 
+    # STRAIGHT PLOT
+    
     x = np.arange(M + 1)
     y = np.arange(N + 1)
     xs, ys = np.meshgrid(x, y)
@@ -182,12 +263,10 @@ def arlequin_plot(
     file_path = pathlib.Path(save_path) / f"{helpar}.pdf"
     fig.savefig(fname=file_path, format="pdf")
 
-    #  SECOND PLOT
+    #  ROTATED PLOT
+
     sz1_1 = df1["col1"].ravel()
     sz2_1 = df1["col2"].ravel()
-
-    M_1 = 4 ** (unit_len - 2)
-    N_1 = 4 ** 2
 
     x_1 = np.arange(M_1 + 1)
     y_1 = np.arange(N_1 + 1)
@@ -238,8 +317,6 @@ def arlequin_plot(
 
 
 def bconf_heatmap(df, fname, save_path, base="T", label_offset=0.05):
-    # define list for axes ticks to inforce label order,
-    # so its the same as the paper
     xaxis = [
         "GG",
         "GA",

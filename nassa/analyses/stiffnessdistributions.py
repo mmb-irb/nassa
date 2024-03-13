@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+import numpy.ma as ma 
 from .base import Base
 from .utils.heatmaps import arlequin_plot
 from ..loaders.sequence import load_sequence
@@ -118,32 +118,14 @@ class StiffnessDistributions(Base):
             TL_av = self.circ_avg(cols_dict["buckle"])
             RL_av = self.circ_avg(cols_dict["propel"])
             TW_av = self.circ_avg(cols_dict["opening"])
-        print(SH_av, SL_av, RS_av, TL_av, RL_av, TW_av)
-        print(cols_dict)
         cols_arr = [cols_dict[coord] for coord in coordinates]
-        duplicated_keys = [key for key, count in Counter(cols_dict).items() if count > 1]
+        cols_arr = np.array(cols_arr).T
 
-        if duplicated_keys:
-            raise ValueError(f"Llaves duplicadas encontradas: {duplicated_keys}")
-        df = pd.DataFrame(cols_dict)
-        print(df)
+        cv = ma.cov(ma.masked_invalid(cols_arr), rowvar=False)
+        cv.filled(np.nan)
 
-
-
-
-
-        #print(cols_arr)
-        #cov = ma.cov(ma.masked_invalid(cols_arr),rowvar=False)
-        cols_arr = np.array(cols_arr, dtype=int)
-        #cov = np.cov(cols_arr)
-        #cov = pd.DataFrame(cols_arr).T.reset_index(drop=True)
-        print(cols_arr)
-        print(cov)
-        cov = cols_arr.cov()
-        cov_df = pd.DataFrame(cov, columns=coordinates, index=coordinates)
-        #print(cols_arr)
-        print(cov)
-        stiff = np.linalg.inv(cov) * KT
+        cov_df = pd.DataFrame(cv, columns=coordinates, index=coordinates)
+        stiff = np.linalg.inv(cv) * KT
         last_row = [SH_av, SL_av, RS_av, TL_av, RL_av, TW_av]
         stiff = np.append(stiff, last_row).reshape(7, 6)
         stiff = stiff.round(6)
@@ -176,11 +158,8 @@ class StiffnessDistributions(Base):
         # 0: between mean-std and mean+std (white)
         # -1: below mean-std (red)
         labeled_df = (df < l2) * -1 + (df > l1)
-        #labeled_df = labeled_df.append(global_mean.rename("g_mean"))
-        #labeled_df = labeled_df.append(global_std.rename("g_std"))
         labeled_df.loc["g_mean"] = global_mean
         labeled_df.loc["g_std"] = global_std
-        #print(labeled_df)
 
         return labeled_df
 
