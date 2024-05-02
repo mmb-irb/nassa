@@ -36,7 +36,7 @@ class BasePairCorrelation(Base):
         extracted["sequences"] = sequences
         self.logger.info(f"loaded {len(sequences)} sequences")
 
-        # Iterate over the different parameters: shift, twist, roll, slide, tilt, rise
+        #Iterate over the different parameters: shift, twist, roll, slide, tilt, rise
         for coord in self.coordinate_info.keys():
             crd_data = []
             for ser_file in self.coordinate_info[coord]:
@@ -47,7 +47,7 @@ class BasePairCorrelation(Base):
                 crd_data.append(ser)
             extracted[coord.lower()] = crd_data
             self.logger.info(f"loaded {len(crd_data)} files for coordinate <{coord}>")
-
+            
         return extracted
 
     def extraer_tetramero_central(hexamero):
@@ -92,7 +92,7 @@ class BasePairCorrelation(Base):
             next_unit_df = pd.DataFrame(
                 {coord: coordinates[coord][idx+2]
                  for coord in coordinates.keys()})
-            crd_corr = self.get_correlation(next_unit_df, unit_df)
+            crd_corr = self.get_correlation(next_unit_df, unit_df) # inverse order ? 
             coordinate_correlations[f"{subunit}/{next_subunit}"] = crd_corr
         return coordinate_correlations
 
@@ -128,7 +128,7 @@ class BasePairCorrelation(Base):
         elif method1 == "circular" and method2 == "circular":
             value = self.circular(arr1, arr2)
         else:
-            value = np.corrcoef(arr1, arr2)[1, 0]
+            value = ma.corrcoef(ma.masked_invalid(arr1), ma.masked_invalid(arr2))[1, 0]
         return value
 
     @staticmethod
@@ -144,13 +144,15 @@ class BasePairCorrelation(Base):
     @staticmethod
     def circlineal(x1, x2):
         x2 = x2 * np.pi / 180
-        rc = np.corrcoef(x1, np.cos(x2))[1, 0]
-        rs = np.corrcoef(x1, np.sin(x2))[1, 0]
-        rcs = np.corrcoef(np.sin(x2), np.cos(x2))[1, 0]
+        x1 = x1.to_numpy()
+        x2 = x2.to_numpy()
+        rc = ma.corrcoef(ma.masked_invalid(x1), ma.masked_invalid(np.cos(x2)))[1, 0]
+        rs = ma.corrcoef(ma.masked_invalid(x1), ma.masked_invalid(np.sin(x2)))[1, 0]
+        rcs = ma.corrcoef(ma.masked_invalid(np.sin(x2)), ma.masked_invalid(np.cos(x2)))[1, 0]
         num = (rc ** 2) + (rs ** 2) - 2 * rc * rs * rcs
         den = 1 - (rcs ** 2)
         correlation = np.sqrt(num / den)
-        if np.corrcoef(x1, x2)[1, 0] < 0:
+        if ma.corrcoef(ma.masked_invalid(x1), ma.masked_invalid(x2))[1, 0] < 0:
             correlation *= -1
         return correlation
 

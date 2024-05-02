@@ -115,6 +115,8 @@ class StiffnessDistributions(Base):
             SH_av = cols_dict["shear"].mean()
             SL_av = cols_dict["stretch"].mean()
             RS_av = cols_dict["stagger"].mean()
+            CW_av = cols_dict["chiw"].mean()
+            CC_av = cols_dict["chic"].mean()
             TL_av = self.circ_avg(cols_dict["buckle"])
             RL_av = self.circ_avg(cols_dict["propel"])
             TW_av = self.circ_avg(cols_dict["opening"])
@@ -126,8 +128,17 @@ class StiffnessDistributions(Base):
 
         cov_df = pd.DataFrame(cv, columns=coordinates, index=coordinates)
         stiff = np.linalg.inv(cv) * KT
-        last_row = [SH_av, SL_av, RS_av, TL_av, RL_av, TW_av]
-        stiff = np.append(stiff, last_row).reshape(7, 6)
+        print(stiff)
+        # Added two new variables: ChiC and ChiW -> 8 (for PENTAMERS)
+        if (self.unit_len % 2) == 0:
+            last_row = [SH_av, SL_av, RS_av, TL_av, RL_av, TW_av] #, CW_av, CC_av]
+            stiff = np.append(stiff, last_row).reshape(7, 6)
+        elif (self.unit_len % 2) == 1:
+            last_row = [SH_av, SL_av, RS_av, TL_av, RL_av, TW_av, CW_av, CC_av]
+            print(last_row)
+            stiff = np.append(stiff, last_row).reshape(9, 8)
+            scaling=[1, 1, 1, 10.6, 10.6, 10.6, 1, 1]
+        
         stiff = stiff.round(6)
         stiff_diag = np.diagonal(stiff) * np.array(scaling)
 

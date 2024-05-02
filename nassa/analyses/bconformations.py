@@ -127,7 +127,7 @@ class BConformations(Base):
         B_II.to_csv(self.save_path / "BII.csv", index=False)
 
     def make_plots(self, B_I):
-        bconf_heatmap(B_I, "BI", self.save_path, self.Ac)
+        bconf_heatmap(B_I, "BI", self.save_path, self.unit_len, self.Ac)
         B_II = B_I.copy()
         B_II["pct"] = 100 - B_I["pct"]
-        bconf_heatmap(B_II, "BII", self.save_path, self.Ac)
+        bconf_heatmap(B_II, "BII", self.save_path, self.unit_len, self.Ac)

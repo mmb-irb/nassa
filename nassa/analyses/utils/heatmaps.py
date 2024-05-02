@@ -7,7 +7,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.tri import Triangulation
 from matplotlib.colors import ListedColormap
-
+from ...entities.nucleicacid import NucleicAcid
 
 def get_axes(subunit_len, base):
     '''Create the correct labels according to the lenght of the subunit'''
@@ -39,13 +39,16 @@ def get_axes(subunit_len, base):
         nucleotide_order = [b.join(f) for f in yaxis for b in xaxis]
 
     elif subunit_len == 5:
-        xaxis = f"G A C {base}".split()
+        #xaxis = f"G A C {base}".split()
+        xaxis = []
         yaxis = []
         nucl = ['A', 'C', 'G', base]
         nucleotide_order = [a + b + c + d + e for a in nucl for b in nucl for c in nucl for d in nucl for e in nucl]
         for i in nucleotide_order:
-            yaxis.append(i[:2] + "_" + i[-2:])
-        yaxis = list(set(yaxis))
+            xaxis.append(i[1:-1])
+            yaxis.append(i[0] + "..." + i[-1:])
+            #yaxis.append(i[:2] + "_" + i[-2:])
+        yaxis = list(set(xaxis))
 
     elif subunit_len == 6:
         nucleotide_order= [f"{n1}{n2}{n3}" for n1 in yaxis for n2 in yaxis for n3 in yaxis]
@@ -100,14 +103,14 @@ def reorder_labels_rotated_plot(df, subunit_name, tetramer_order):
 
     if subunit_name == 'pentamer':
         centre= len(merged_df[subunit_name][1])%2
-        merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre+1]+"_"+x[centre+2:])
-        merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[centre+1])
+        merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[1:-1])
+        merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[0]+"..."+x[-1:])
         merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
         yaxiss = []
         xaxiss = []
         for i in range(len(merged_df)):
-            yaxiss.append(merged_df[subunit_name][i][centre+1])
-            xaxiss.append(merged_df[subunit_name][i][:centre+1] + "_" + merged_df[subunit_name][i][centre+2:])
+            xaxiss.append(merged_df[subunit_name][i][1:-1])
+            yaxiss.append(merged_df[subunit_name][i][0] + "..." + merged_df[subunit_name][i][-1:])
 
         xaxis1=[]
         for nucl in xaxiss:
@@ -119,6 +122,28 @@ def reorder_labels_rotated_plot(df, subunit_name, tetramer_order):
             if nucl not in yaxis1:
                 yaxis1.append(nucl)
         df1 = merged_df    
+
+    # if subunit_name == 'pentamer':
+    #     centre= len(merged_df[subunit_name][1])%2
+    #     merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre+1]+"_"+x[centre+2:])
+    #     merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[centre+1])
+    #     merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
+    #     yaxiss = []
+    #     xaxiss = []
+    #     for i in range(len(merged_df)):
+    #         yaxiss.append(merged_df[subunit_name][i][centre+1])
+    #         xaxiss.append(merged_df[subunit_name][i][:centre+1] + "_" + merged_df[subunit_name][i][centre+2:])
+
+    #     xaxis1=[]
+    #     for nucl in xaxiss:
+    #         if nucl not in xaxis1:
+    #             xaxis1.append(nucl)
+
+    #     yaxis1 = []
+    #     for nucl in yaxiss:
+    #         if nucl not in yaxis1:
+    #             yaxis1.append(nucl)
+    #     df1 = merged_df   
 
     return df1, xaxis1, yaxis1
 
@@ -162,14 +187,15 @@ def reorder_labels_straight_plot(df, subunit_name, tetramer_order):
 
     if subunit_name == 'pentamer':
         centre= len(merged_df[subunit_name][1])%2
-        merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre+1] + "_" + x[centre+2:])
-        merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[centre+1])
+        merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[1:-1])
+        merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[0]+"..."+x[-1:])
+
         merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
         yaxiss = []
         xaxiss = []
         for i in range(len(merged_df)):
-            xaxiss.append(merged_df[subunit_name][i][centre+1])
-            yaxiss.append(merged_df[subunit_name][i][:centre+1] + "_" + merged_df[subunit_name][i][centre+2:])
+            yaxiss.append(merged_df[subunit_name][i][1:-1])
+            xaxiss.append(merged_df[subunit_name][i][0] + "..." + merged_df[subunit_name][i][-1:])
 
         xaxis=[]
         for nucl in xaxiss:
@@ -181,6 +207,28 @@ def reorder_labels_straight_plot(df, subunit_name, tetramer_order):
             if nucl not in yaxis:
                 yaxis.append(nucl)
         df = merged_df
+
+    # if subunit_name == 'pentamer':
+    #     centre= len(merged_df[subunit_name][1])%2
+    #     merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre+1] + "_" + x[centre+2:])
+    #     merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[centre+1])
+    #     merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
+    #     yaxiss = []
+    #     xaxiss = []
+    #     for i in range(len(merged_df)):
+    #         xaxiss.append(merged_df[subunit_name][i][centre+1])
+    #         yaxiss.append(merged_df[subunit_name][i][:centre+1] + "_" + merged_df[subunit_name][i][centre+2:])
+
+    #     xaxis=[]
+    #     for nucl in xaxiss:
+    #         if nucl not in xaxis:
+    #             xaxis.append(nucl)
+
+    #     yaxis = []
+    #     for nucl in yaxiss:
+    #         if nucl not in yaxis:
+    #             yaxis.append(nucl)
+    #     df = merged_df
 
     return df, xaxis, yaxis
 
@@ -209,10 +257,10 @@ def arlequin_plot(
         N_1 = 4 ** 2
     
     if unit_name == 'pentamer':
-        M = 4 
-        N = 4 ** 4
-        M_1 = 4 ** 4
-        N_1 = 4
+        M = 4 * 4
+        N = 4 ** 3
+        M_1 = 4 ** 3
+        N_1 = 4 * 4
 
     # STRAIGHT PLOT
     
@@ -316,8 +364,35 @@ def arlequin_plot(
     return fig, axs, fig_1, axs_1 
 
 
-def bconf_heatmap(df, fname, save_path, base="T", label_offset=0.05):
-    xaxis = [
+def bconf_heatmap(df, fname, save_path, subunit_len, base="T", label_offset=0.05):
+    print('subunit len: ', subunit_len)
+    if subunit_len == 3:
+        yaxis = [
+        f"{base}{base}",
+        f"{base}C",
+        f"C{base}",
+        "CC",
+        f"G{base}",
+        "GC",
+        f"A{base}",
+        "AC",
+        f"{base}G",
+        f"{base}A",
+        "CG",
+        "CA",
+        "GG",
+        "GA",
+        "AG",
+        "AA"]
+        xaxis = f"G A C {base}".split()
+        nucleotide_order = pd.DataFrame(
+            [b.join(f) for f in yaxis for b in xaxis],
+            columns=["trimer"])
+        df = df.merge(nucleotide_order, how="right", on="trimer")
+        fig, ax = plt.subplots()
+
+    elif subunit_len == 4:
+        xaxis = [
         "GG",
         "GA",
         "AG",
@@ -334,11 +409,59 @@ def bconf_heatmap(df, fname, save_path, base="T", label_offset=0.05):
         f"C{base}",
         f"{base}C",
         f"{base}{base}"]
-    yaxis = xaxis.copy()
-    tetramer_order = pd.DataFrame(
-        [b.join(f) for f in yaxis for b in xaxis],
-        columns=["tetramer"])
-    df = df.merge(tetramer_order, how="right", on="tetramer")
+        yaxis = xaxis.copy()
+        tetramer_order = pd.DataFrame(
+            [b.join(f) for f in yaxis for b in xaxis],
+            columns=["tetramer"])
+        df = df.merge(tetramer_order, how="right", on="tetramer")
+        fig, ax = plt.subplots()
+
+    elif subunit_len == 5:
+        raise ValueError('The length of the subunit 5 is not a valid option for bconf analyses. Try with 4 or 6.')
+
+    elif subunit_len == 6:
+        xaxis = [
+        f"{base}{base}",
+        f"{base}C",
+        f"C{base}",
+        "CC",
+        f"G{base}",
+        "GC",
+        f"A{base}",
+        "AC",
+        f"{base}G",
+        f"{base}A",
+        "CG",
+        "CA",
+        "GG",
+        "GA",
+        "AG",
+        "AA"]
+        nucleotide_order= [f"{n1}{n2}{n3}" for n1 in xaxis for n2 in xaxis for n3 in xaxis]
+        yaxis = []
+        xaxis = []
+        for i in nucleotide_order:
+            xaxis.append(i[:2] + "_" + i[-2:])
+            yaxis.append(i[2:4])
+        yaxis = list(set(yaxis))
+        xaxis = list(set(xaxis))
+        # tetramer_order = pd.DataFrame(
+        #     [b.join(f) for f in xaxis for b in yaxis],
+        #     columns=["hexamer"])
+        tetramer_order = pd.DataFrame(
+            sorted(nucleotide_order),
+            columns=["hexamer"])
+        print(sorted(nucleotide_order))
+        print(df)
+        df = df.merge(tetramer_order, how="right", on="hexamer")
+        print(df)
+        fig, ax = plt.subplots(
+            1,      
+            1,
+            figsize=(22, 12), 
+            dpi=300,
+            tight_layout=True)
+    
     colormap = ListedColormap([
         "darkblue",
         "blue",
@@ -349,17 +472,22 @@ def bconf_heatmap(df, fname, save_path, base="T", label_offset=0.05):
         "red",
         "crimson"])
     colormap.set_bad(color="grey")
+
     # plot
-    fig, ax = plt.subplots()
-    im = ax.imshow(df["pct"].to_numpy().reshape((16, 16)), cmap=colormap)
+    if subunit_len == 3:
+        im = ax.imshow(df["pct"].to_numpy().reshape((16, 4)), cmap=colormap)
+    if subunit_len == 4:
+        im = ax.imshow(df["pct"].to_numpy().reshape((16, 16)), cmap=colormap)
+    if subunit_len == 6:
+        im = ax.imshow(df["pct"].to_numpy().reshape((16, 256)), cmap=colormap)
     plt.colorbar(im)
     # axes
     xlocs = np.arange(len(xaxis))
     ylocs = np.arange(len(yaxis))
     _ = ax.set_xticks(xlocs)
-    _ = ax.set_xticklabels(xaxis)
+    _ = ax.set_xticklabels(xaxis, minor=True, fontsize=4)
     _ = ax.set_yticks(ylocs)
-    _ = ax.set_yticklabels(yaxis)
+    _ = ax.set_yticklabels(yaxis, minor=True,fontsize=4)
     ax.set_title((fname + " conformations").upper())
     # save as pdf
     file_path = pathlib.Path(save_path) / f"{fname}_percentages.pdf"
