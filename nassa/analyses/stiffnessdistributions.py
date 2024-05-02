@@ -5,8 +5,8 @@ from .base import Base
 from .utils.heatmaps import arlequin_plot
 from ..loaders.sequence import load_sequence
 from ..loaders.trajectory import load_serfile
-import numpy.ma as ma
-from collections import Counter
+
+
 class StiffnessDistributions(Base):
 
     def __init__(
@@ -146,6 +146,8 @@ class StiffnessDistributions(Base):
         cte.columns = coordinates
         cte.index = coordinates + ["avg"]
         return stiff_diag, cte, cov_df
+
+
 
     @ staticmethod
     def circ_avg(xarr, degrees=True):
