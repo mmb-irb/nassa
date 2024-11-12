@@ -451,10 +451,7 @@ def bconf_heatmap(df, fname, save_path, subunit_len, base="T", label_offset=0.05
         tetramer_order = pd.DataFrame(
             sorted(nucleotide_order),
             columns=["hexamer"])
-        print(sorted(nucleotide_order))
-        print(df)
         df = df.merge(tetramer_order, how="right", on="hexamer")
-        print(df)
         fig, ax = plt.subplots(
             1,      
             1,

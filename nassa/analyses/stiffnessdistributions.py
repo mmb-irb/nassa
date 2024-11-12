@@ -128,7 +128,7 @@ class StiffnessDistributions(Base):
 
         cov_df = pd.DataFrame(cv, columns=coordinates, index=coordinates)
         stiff = np.linalg.inv(cv) * KT
-        print(stiff)
+        #print(stiff)
         # Added two new variables: ChiC and ChiW -> 8 (for PENTAMERS)
         if (self.unit_len % 2) == 0:
             last_row = [SH_av, SL_av, RS_av, TL_av, RL_av, TW_av] #, CW_av, CC_av]

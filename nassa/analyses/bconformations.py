@@ -73,7 +73,7 @@ class BConformations(Base):
             angles_df.append(traj_df)
         angles_df = pd.concat(angles_df, axis=1)
         # percentages BI
-        B_I = (angles_df < 0).sum(axis=0) * 100 / self.n_lines
+        B_I = (angles_df < 0).sum(axis=0) * 100 / len(angles_df) # self.n_lines
         # clean dataset
         B_I = B_I[~B_I.index.duplicated(keep='first')]
         B_I = B_I.reset_index()
