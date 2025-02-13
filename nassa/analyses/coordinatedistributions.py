@@ -132,6 +132,9 @@ class CoordinateDistributions(Base):
             trajectory_info.append(subunit_information)
             # add inverse-complement
             ic_subunit_information = subunit_information.copy()
+            if ic_subunit_information["coordinate"] == 'shift' or ic_subunit_information["coordinate"] == 'tilt':
+                ic_subunit_information["mean1"] = ic_subunit_information["mean1"]*-1
+                ic_subunit_information["mean2"] = ic_subunit_information["mean2"]*-1
             ic_subunit_information[self.unit_name] = ic_subunit
             trajectory_info.append(ic_subunit_information)
         # create dataframe from list of dictionaries
