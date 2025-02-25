@@ -276,21 +276,23 @@ def arlequin_plot(
     triang1 = Triangulation(xs.ravel(), ys.ravel(), upper_triangle)
     triang2 = Triangulation(xs.ravel(), ys.ravel(), lower_triangle)
 
-    fig, axs = plt.subplots(
-        1,      
-        1,
-        figsize=(8,18),
-        dpi=300,
-        tight_layout=True)
+    if not unit_len == 4:
+        fig, axs = plt.subplots(
+            1,      
+            1,
+            figsize=(8,18),
+            dpi=300,
+            tight_layout=True)
+    else:
+        fig, axs = plt.subplots(
+            1,      
+            1,
+            figsize=(8, 8),
+            dpi=300,
+            tight_layout=True)
 
     colormap = plt.get_cmap("bwr", 3).reversed()
     colormap.set_bad(color="grey")
-    print(xs.ravel())
-    print(ys.ravel())
-    print(triang1, sz1)
-    print(f"sz1: {sz1.shape}, xs: {xs.ravel().shape}, triangles: {triang1.triangles.shape}")
-    print(f"df['col1'].shape: {df['col1'].shape}")
-    print(df)
 
     img1 = axs.tripcolor(triang1, sz1, cmap=colormap, vmin=-1, vmax=1)
     _ = axs.tripcolor(triang2, sz2, cmap=colormap, vmin=-1, vmax=1)
