@@ -147,7 +147,7 @@ def reorder_labels_rotated_plot(df, subunit_name, tetramer_order):
 
     return df1, xaxis1, yaxis1
 
-def reorder_labels_straight_plot(df, subunit_name, tetramer_order):
+def reorder_labels_straight_plot(df, subunit_name, tetramer_order, base):
     '''For the straight plot: reorder the nucleotides labels matching them to their according values of the dataframe. '''
 
     if subunit_name == 'tetramer':
@@ -156,6 +156,24 @@ def reorder_labels_straight_plot(df, subunit_name, tetramer_order):
         df = df.sort_values(by="subunit_rank")
         df = df.drop("subunit_rank", axis=1)
         df = df.reset_index(drop=True)
+        yaxis = [
+            f"{base}{base}",
+            f"{base}C",
+            f"C{base}",
+            "CC",
+            f"G{base}",
+            "GC",
+            f"A{base}",
+            "AC",
+            f"{base}G",
+            f"{base}A",
+            "CG",
+            "CA",
+            "GG",
+            "GA",
+            "AG",
+            "AA"]
+        xaxis = yaxis[::-1]
 
     tetramer_order.sort()
     all_tetramers = pd.DataFrame({subunit_name: ["".join(tetramer) for tetramer in tetramer_order]})
@@ -208,28 +226,6 @@ def reorder_labels_straight_plot(df, subunit_name, tetramer_order):
                 yaxis.append(nucl)
         df = merged_df
 
-    # if subunit_name == 'pentamer':
-    #     centre= len(merged_df[subunit_name][1])%2
-    #     merged_df['yaxis'] = merged_df[subunit_name].apply(lambda x: x[:centre+1] + "_" + x[centre+2:])
-    #     merged_df['xaxis'] = merged_df[subunit_name].apply(lambda x: x[centre+1])
-    #     merged_df = merged_df.sort_values(by=['yaxis','xaxis'], ascending=True)
-    #     yaxiss = []
-    #     xaxiss = []
-    #     for i in range(len(merged_df)):
-    #         xaxiss.append(merged_df[subunit_name][i][centre+1])
-    #         yaxiss.append(merged_df[subunit_name][i][:centre+1] + "_" + merged_df[subunit_name][i][centre+2:])
-
-    #     xaxis=[]
-    #     for nucl in xaxiss:
-    #         if nucl not in xaxis:
-    #             xaxis.append(nucl)
-
-    #     yaxis = []
-    #     for nucl in yaxiss:
-    #         if nucl not in yaxis:
-    #             yaxis.append(nucl)
-    #     df = merged_df
-
     return df, xaxis, yaxis
 
 def arlequin_plot(
@@ -244,12 +240,17 @@ def arlequin_plot(
         label_offset=0.5):
     
     xaxis, yaxis, tetramer_order = get_axes(unit_len, base)
-    df, xaxis, yaxis = reorder_labels_straight_plot(df, unit_name, tetramer_order)
-    df1, xaxis1, yaxis1 = reorder_labels_rotated_plot(df, unit_name, tetramer_order)
+    df, xaxis, yaxis = reorder_labels_straight_plot(df, unit_name, tetramer_order, base)
+    if not unit_len == 4:
+        df1, xaxis1, yaxis1 = reorder_labels_rotated_plot(df, unit_name, tetramer_order)
 
     sz1 = df["col1"].ravel()
     sz2 = df["col2"].ravel()
- 
+    
+    if unit_name == 'tetramer':
+        M = 4 ** 2
+        N = 4 ** 2
+
     if unit_name == 'hexamer':
         M = 4**2
         N = 4**(unit_len - 2)
@@ -284,6 +285,13 @@ def arlequin_plot(
 
     colormap = plt.get_cmap("bwr", 3).reversed()
     colormap.set_bad(color="grey")
+    print(xs.ravel())
+    print(ys.ravel())
+    print(triang1, sz1)
+    print(f"sz1: {sz1.shape}, xs: {xs.ravel().shape}, triangles: {triang1.triangles.shape}")
+    print(f"df['col1'].shape: {df['col1'].shape}")
+    print(df)
+
     img1 = axs.tripcolor(triang1, sz1, cmap=colormap, vmin=-1, vmax=1)
     _ = axs.tripcolor(triang2, sz2, cmap=colormap, vmin=-1, vmax=1)
 
@@ -311,6 +319,9 @@ def arlequin_plot(
     file_path = pathlib.Path(save_path) / f"{helpar}.pdf"
     fig.savefig(fname=file_path, format="pdf")
 
+    if unit_name == 'tetramer':
+        return fig, axs
+    
     #  ROTATED PLOT
 
     sz1_1 = df1["col1"].ravel()
