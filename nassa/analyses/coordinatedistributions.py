@@ -138,17 +138,18 @@ class CoordinateDistributions(Base):
                 ic_subunit_information["mean1"] = ic_subunit_information["mean1"]*-1
                 ic_subunit_information["mean2"] = ic_subunit_information["mean2"]*-1
                 if ic_subunit_information["coordinate"] == 'shift':
-                    duplicates_shift.append(ic_subunit_information)
+                    duplicates_shift.append(ic_subunit)
                 if ic_subunit_information["coordinate"] == 'tilt':
-                    duplicates_tilt.append(ic_subunit_information)
+                    duplicates_tilt.append(ic_subunit)
             ic_subunit_information[self.unit_name] = ic_subunit
             trajectory_info.append(ic_subunit_information)
+
         if duplicates_shift:
             duplicates_shift_pd = pd.DataFrame(duplicates_shift)
-            duplicates_shift_pd.to_csv(f"/Users/agarciad/{coordinate}_shift_duplicates.csv", index=False)
+            duplicates_shift_pd.to_csv(f"/home/agarciad/ABCix/r02/{coordinate}_duplicates.txt", index=False, header=False)
         if duplicates_tilt:
             duplicates_tilt_pd = pd.DataFrame(duplicates_tilt)
-            duplicates_tilt_pd.to_csv(f"/Users/agarciad/{coordinate}_tilt_duplicates.csv", index=False)
+            duplicates_tilt_pd.to_csv(f"/home/agarciad/ABCix/r02/{coordinate}_duplicates.csv", index=False, header=False)
         raise "STOOOP"
         # create dataframe from list of dictionaries
         trajectory_df = pd.DataFrame.from_dict(trajectory_info)
