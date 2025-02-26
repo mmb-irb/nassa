@@ -95,8 +95,6 @@ class CoordinateDistributions(Base):
         # iterate over subunits
         start = 2 + sequence.flanksize
         end = sequence.size - (2 + sequence.baselen + sequence.flanksize - 1)
-        duplicates_shift = []
-        duplicates_tilt = []
         for idx in range(start, end):
             # get unit and inverse-complement unit
             subunit = sequence.get_subunit(idx)
@@ -134,23 +132,8 @@ class CoordinateDistributions(Base):
             trajectory_info.append(subunit_information)
             # add inverse-complement
             ic_subunit_information = subunit_information.copy()
-            if ic_subunit_information["coordinate"] == 'shift' or ic_subunit_information["coordinate"] == 'tilt':
-                ic_subunit_information["mean1"] = ic_subunit_information["mean1"]*-1
-                ic_subunit_information["mean2"] = ic_subunit_information["mean2"]*-1
-                if ic_subunit_information["coordinate"] == 'shift':
-                    duplicates_shift.append(ic_subunit)
-                if ic_subunit_information["coordinate"] == 'tilt':
-                    duplicates_tilt.append(ic_subunit)
             ic_subunit_information[self.unit_name] = ic_subunit
             trajectory_info.append(ic_subunit_information)
-
-        if duplicates_shift:
-            duplicates_shift_pd = pd.DataFrame(duplicates_shift)
-            duplicates_shift_pd.to_csv(f"/home/agarciad/ABCix/r02/{coordinate}_duplicates.txt", index=False, header=False)
-        if duplicates_tilt:
-            duplicates_tilt_pd = pd.DataFrame(duplicates_tilt)
-            duplicates_tilt_pd.to_csv(f"/home/agarciad/ABCix/r02/{coordinate}_duplicates.csv", index=False, header=False)
-        raise "STOOOP"
         # create dataframe from list of dictionaries
         trajectory_df = pd.DataFrame.from_dict(trajectory_info)
         return trajectory_df
