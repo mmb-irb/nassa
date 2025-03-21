@@ -280,7 +280,7 @@ def arlequin_plot(
         fig, axs = plt.subplots(
             1,      
             1,
-            figsize=(8,18),
+            figsize=(16, 16),  # Make the figure square
             dpi=300,
             tight_layout=True)
     else:
@@ -293,7 +293,6 @@ def arlequin_plot(
 
     colormap = plt.get_cmap("bwr", 3).reversed()
     colormap.set_bad(color="grey")
-
     img1 = axs.tripcolor(triang1, sz1, cmap=colormap, vmin=-1, vmax=1)
     _ = axs.tripcolor(triang2, sz2, cmap=colormap, vmin=-1, vmax=1)
 
@@ -305,9 +304,15 @@ def arlequin_plot(
     _ = axs.set_yticks(ylocs)
     _ = axs.set_yticklabels("")
     _ = axs.set_xticks(xlocs+label_offset, minor=True)
-    _ = axs.set_xticklabels(xaxis, minor=True,fontsize=8)
+    if unit_name == 'tetramer' or unit_len == 4:
+        _ = axs.set_xticklabels(xaxis, minor=True,fontsize=16)
+    else:
+        _ = axs.set_xticklabels(xaxis, minor=True,fontsize=14)
     _ = axs.set_yticks(ylocs+label_offset, minor=True)
-    _ = axs.set_yticklabels(yaxis, minor=True,fontsize=6)
+    if unit_name == 'tetramer' or unit_len == 4:
+        _ = axs.set_yticklabels(yaxis, minor=True,fontsize=16)
+    else:
+        _ = axs.set_yticklabels(yaxis, minor=True,fontsize=6)
 
     _ = axs.set_xlim(0, M)
     _ = axs.set_ylim(0, N)
@@ -362,7 +367,7 @@ def arlequin_plot(
     _ = axs_1.set_xticks(xlocs_1+label_offset, minor=True)
     _ = axs_1.set_xticklabels(xaxis1, minor=True,fontsize=4, rotation=90)
     _ = axs_1.set_yticks(ylocs_1+label_offset, minor=True)
-    _ = axs_1.set_yticklabels(yaxis1, minor=True,fontsize=6)
+    _ = axs_1.set_yticklabels(yaxis1, minor=True,fontsize=12)
     _ = axs_1.set_xlim(0, M_1)
     _ = axs_1.set_ylim(0, N_1)
     axs_1.set_title(helpar.upper())
